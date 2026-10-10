@@ -1,0 +1,57 @@
+{
+  "instance": "bgsfqe",
+  "pd_root": "/workspace/volume/data/dy/bench",
+  "_comment_nodes": "One record per node: label (hostname -s from the instance tag onwards), eth0 ip, and the container-mapped RDMA ports. ucx lists only ports that exist in the container; mlx5 numbering differs per node even though every node exposes net1..net8, so the list is per node, not per role. Every one of these fields changes on a platform rebuild; init_check.py re-derives all of them from the nodes themselves.",
+  "nodes": [
+    {
+      "label": "bgsfqe-launcher-0",
+      "ip": "10.9.101.232",
+      "ucx": "mlx5_0:1,mlx5_1:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx5_6:1,mlx5_7:1"
+    },
+    {
+      "label": "bgsfqe-worker-0",
+      "ip": "10.8.174.117",
+      "ucx": "mlx5_0:1,mlx5_1:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx5_6:1,mlx5_7:1"
+    },
+    {
+      "label": "bgsfqe-worker-1",
+      "ip": "10.9.63.236",
+      "ucx": "mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx5_6:1,mlx5_7:1,mlx5_8:1,mlx5_9:1"
+    },
+    {
+      "label": "bgsfqe-worker-2",
+      "ip": "10.9.163.39",
+      "ucx": "mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx5_6:1,mlx5_7:1,mlx5_8:1,mlx5_9:1"
+    }
+  ],
+  "_comment_topologies": "Named deployments, written as role suffixes rather than full labels: a platform rebuild rewrites the instance tag inside every label, the suffix is what survives. deploy.sh resolves these into a PD_TOPO string.",
+  "topologies": {
+    "1p1d": {
+      "prefill": [
+        "launcher-0"
+      ],
+      "decode": [
+        "worker-0"
+      ]
+    },
+    "1p3d": {
+      "prefill": [
+        "launcher-0"
+      ],
+      "decode": [
+        "worker-0",
+        "worker-1",
+        "worker-2"
+      ]
+    }
+  },
+  "_comment_ports": "Ports are per role and identical on every node, because each node runs at most one engine: 8200 on three decode hosts is three distinct network namespaces. The NIXL side channel is likewise per host. Two engines of the same role on one node would need distinct ports and side channels.",
+  "ports": {
+    "prefill_http": 8100,
+    "decode_http": 8200,
+    "router": 8300,
+    "prefill_side": 5610,
+    "decode_side": 5710
+  },
+  "ucx_ib_gid_index": 7
+}
