@@ -73,8 +73,18 @@ detach_router() { # LABEL
     "$HERE" "$topo_string" "$HERE" "$run_id" "$(launch_log "$1" router)"
 }
 
+# Where the engine itself logs (start.sh/router.sh write this, the launch log above only
+# ever holds the wrapper's first line).
+service_log() { # LABEL NAME(prefill|decode|router)
+  if [[ $2 == router ]]; then
+    printf '%s/router.log\n' "$(py router-dir "$run_id")"
+  else
+    printf '%s/server.log\n' "$(py engine-dir "$run_id" "$2" "$1")"
+  fi
+}
+
 wait_http() { # LABEL PORT NAME PATH EXPECTATION(200|any)
-  local label=$1 port=$2 name=$3 path=$4 expect=$5 ip code deadline
+  local label=$1 port=$2 name=$3 path=$4 expect=$5 ip code deadline log
   ip=$(py node-ip "$label")
   deadline=$(( SECONDS + health_timeout ))
   while :; do
@@ -85,8 +95,10 @@ wait_http() { # LABEL PORT NAME PATH EXPECTATION(200|any)
     fi
     if (( SECONDS >= deadline )); then
       echo "  $name $label: not up after ${health_timeout}s (last http $code)" >&2
-      local log; log=$(launch_log "$label" "$name")
-      if [[ -f $log ]]; then echo "  --- tail of $log ---" >&2; tail -n 8 "$log" >&2; echo "  ---" >&2; fi
+      # Show both: the wrapper's log says it was asked to start, the engine's log says why it did not.
+      for log in "$(launch_log "$label" "$name")" "$(service_log "$label" "$name")"; do
+        if [[ -f $log ]]; then echo "  --- tail of $log ---" >&2; tail -n 12 "$log" >&2; echo "  ---" >&2; fi
+      done
       return 1
     fi
     sleep 10
@@ -114,6 +126,9 @@ if [[ $action == start ]]; then
   done
   remote "$router_node" "$(detach_engine "$router_node" prefill)"
   echo "  prefill $router_node: requested"
+  # Record the run as soon as engines exist, not once they are healthy: a start that fails
+  # later still leaves processes behind, and `deploy.sh stop` finds them through this file.
+  printf '%s\n' "$run_id" > "$HERE/last_run"
   echo
   echo "waiting for engines (per-node timeout ${health_timeout}s):"
   for label in "${prefills[@]}"; do wait_http "$label" "$prefill_port" prefill /health 200 || die "prefill $label never became healthy; inspect $log_dir"; done
@@ -122,7 +137,6 @@ if [[ $action == start ]]; then
   echo "launching router on $router_node:"
   remote "$router_node" "$(detach_router "$router_node")"
   wait_http "$router_node" "$router_port" router /get_loads any || die "router never answered; inspect $log_dir"
-  printf '%s\n' "$run_id" > "$HERE/last_run"
   echo
   echo "deployed: $topo_name, run $run_id"
   echo "  entry point: http://$router_ip:$router_port/v1   (model glm-5.3)"

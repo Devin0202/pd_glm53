@@ -155,7 +155,10 @@ if [[ $target == all || $target == engine ]]; then
       url="http://$(py node-ip "$label"):$port/metrics"
       deadline=$(( SECONDS + drain_timeout ))
       while :; do
-        running=$(curl -s --max-time 5 "$url" | awk '/^vllm:num_requests_running/ {print $2; exit}')
+        # `|| true` matters: under `set -e` + pipefail a curl that cannot connect (exit 7, which
+        # is the normal state while the engine is still loading) would abort the whole script
+        # before it can report anything. An empty reading is a case to report, not to die on.
+        running=$(curl -s --max-time 5 "$url" | awk '/^vllm:num_requests_running/ {print $2; exit}' || true)
         if [[ -z "$running" ]]; then
           echo "  engine ($engine_role): cannot read $url; stop with --force if it is really down" >&2
           drained=0

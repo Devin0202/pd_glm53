@@ -6,8 +6,8 @@
   "quantization": "smoothquant",
   "trust-remote-code": true,
   "distributed-executor-backend": "mp",
-  "tensor-parallel-size": 8,
-  "data-parallel-size": 1,
+  "tensor-parallel-size": 2,
+  "data-parallel-size": 4,
   "enable-expert-parallel": true,
   "block-size": 16,
   "gpu-memory-utilization": 0.93,
@@ -17,11 +17,12 @@
   "enable-auto-tool-choice": true,
   "tool-call-parser": "glm47",
   "reasoning-parser": "glm45",
-  "enforce-eager": true,
+  "enforce-eager": false,
   "max-num-seqs": 8,
   "additional-config": "{\"dispatch_shared_expert_parallel\": true}",
   "port": 8200,
-  "max-model-len": 262144,
+  "max-model-len": 245760,
   "max-num-batched-tokens": 256,
-  "kv-transfer-config": "{\"kv_connector\": \"NixlConnector\", \"kv_role\": \"kv_consumer\", \"kv_load_failure_policy\": \"fail\"}"
+  "kv-transfer-config": "{\"kv_connector\": \"NixlConnector\", \"kv_role\": \"kv_consumer\", \"kv_load_failure_policy\": \"fail\"}",
+  "speculative-config": "{\"method\": \"mtp\", \"num_speculative_tokens\": 3}"
 }
