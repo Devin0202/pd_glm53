@@ -72,9 +72,16 @@ assert len(used)==8 and all(int(x)==0 for x in used), 'Cards occupied or cnmon f
 PY
 then rm -f /tmp/pd-cnmon-$$.txt; exit 2; fi
 rm -f /tmp/pd-cnmon-$$.txt
-python - "$port" "$side" <<'PY'
+# NIXL binds one side-channel port per data-parallel rank, starting at the base:
+#   VLLM_NIXL_SIDE_CHANNEL_PORT + data_parallel_index
+# (vllm/distributed/kv_transfer/kv_connector/v1/nixl/base_scheduler.py). A DP=4 engine
+# therefore needs side..side+3, not just side and side+1 - checking a fixed two ports
+# would let a busy side+2 or side+3 through and fail only after the weights were loaded.
+dp=$(python3 -c 'import json,sys;print(int(json.load(open(sys.argv[1])).get("data-parallel-size",1)))' "$HERE/configs/$role.yaml")
+python - "$port" "$side" "$dp" <<'PY'
 import socket,sys
-for port in (int(sys.argv[1]),int(sys.argv[2]),int(sys.argv[2])+1):
+http, side, dp = int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3])
+for port in [http] + [side + rank for rank in range(dp)]:
  with socket.socket() as s:
   s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
   s.bind(('0.0.0.0',port))

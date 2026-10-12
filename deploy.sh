@@ -124,8 +124,13 @@ if [[ $action == start ]]; then
     remote "$label" "$(detach_engine "$label" decode)"
     echo "  decode $label: requested"
   done
-  remote "$router_node" "$(detach_engine "$router_node" prefill)"
-  echo "  prefill $router_node: requested"
+  # Every prefill of the topology, not just the one hosting the router: with 2P1D the
+  # second prefill is a separate node and was never launched (the health wait below then
+  # blocked until it timed out).
+  for label in "${prefills[@]}"; do
+    remote "$label" "$(detach_engine "$label" prefill)"
+    echo "  prefill $label: requested"
+  done
   # Record the run as soon as engines exist, not once they are healthy: a start that fails
   # later still leaves processes behind, and `deploy.sh stop` finds them through this file.
   printf '%s\n' "$run_id" > "$HERE/last_run"

@@ -197,13 +197,19 @@ def topology_dict(cfg, run_id, mode):
     }
 
 
+# Keys that must agree between prefill and decode for the KV transfer to be valid - and no more.
+#  - block-size: vLLM's NIXL connector asserts local % remote == 0 (kv_connector/utils.py).
+#  - model / tokenizer-mode: they fix the KV geometry (layers, heads, head_dim, dtype) that the
+#    per-layer transfer metadata is built from.
+# Deliberately absent: max-model-len, speculative-config, no-enable-prefix-caching. Each engine
+# applies its own and vLLM never compares them across P/D; demanding equality blocked legitimate
+# setups (e.g. a prefill under sequence parallelism needs a shorter max-model-len than its decode,
+# and that is a capacity choice, not an inconsistency). The trade-off is explicit: a request
+# longer than the decode's own limit now fails at runtime instead of being refused at startup.
 CONFIG_KEYS = (
     "model",
     "tokenizer-mode",
-    "max-model-len",
     "block-size",
-    "speculative-config",
-    "no-enable-prefix-caching",
 )
 
 

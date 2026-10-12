@@ -1,6 +1,6 @@
 # GLM-5.3 PD 部署包（可配置 1PND）
 
-2026-09-22 以 1P1D 在实例 `13esfga` 上完成跨节点验收。**2026-10-10 平台重建、节点从 2 个增加到 4 个**（1 launcher + 3 worker），本包改为拓扑数据驱动，可部署 1P1D / 1P2D / 1P3D 等任意「1 个 Prefill + N 个 Decode」组合，以及单机 standalone。
+2026-09-22 以 1P1D 在实例 `13esfga` 上完成跨节点验收。**2026-10-10 平台重建、节点从 2 个增加到 4 个**（1 launcher + 3 worker），本包改为拓扑数据驱动，可部署任意「M 个 Prefill + N 个 Decode」组合（已定义 `1p1d` / `1p3d` / `2p1d`），以及单机 standalone。
 
 调用方注意：**实例名、节点 label、eth0 IP、`mlx5` 编号都会随平台重建一起变**（本文写作当天就重建了两次：`13esfga` → `jsso4o` → `u4f0c2`）。下表是当前实例的快照；实际取值以 `cluster.json` 为准，`init_check.py` 会自动校正它。
 
@@ -11,7 +11,7 @@
 > - 缓存目录按节点隔离：三个 decode 节点共享同一文件系统，原 `cache/decode/<profile>` 会被并发写。
 > - `verify.py` 不再硬编码地址，改读 `router.sh` 落下的 `topology.json`，并新增「恰好一个 decode 服务本次请求」的归属断言。
 >
-> **当前状态**：新实例尚未启动 PD，本文档中的 1P3D 启动流程与验收步骤已做静态校验（拓扑解析、角色守卫、配置一致性比较、flag 拼装均已验证），但**尚未在真机上跑过**。旧实例 `13esfga` 的验收结论保留在文末「历史」一节。
+> **当前状态**：启动与验收流程已在真机跑通——2026-10-10 的 1P3D（`runs/deploy_20261010_141242/`）、2026-10-12 的 2P1D（`runs/deploy_20261012_072044/`，两个 prefill 都实际承接了请求）。旧实例 `13esfga` 的验收结论保留在文末「历史」一节。
 
 ## 节点清单
 
@@ -167,16 +167,26 @@ PD 模式的判定是**归属式**的：`round_robin` 把每个请求只发给�
 
 ## 拓扑切换
 
-改拓扑只改启动命令里的 `PD_TOPO`，脚本、配置、目录结构都不用动：
+拓扑在 `cluster.json` 的 `topologies` 里定义，**用角色后缀而非完整 label**
+（平台重建只换实例前缀，后缀不变，所以定义不用跟着改）：
 
-```bash
-# 1P1D：只启用 worker-0
-PD_TOPO="prefill=u4f0c2-launcher-0 decode=u4f0c2-worker-0"
-# 1P2D
-PD_TOPO="prefill=u4f0c2-launcher-0 decode=u4f0c2-worker-0,u4f0c2-worker-1"
+```json
+"topologies": {
+  "1p1d": {"prefill": ["launcher-0"],             "decode": ["worker-0"]},
+  "1p3d": {"prefill": ["launcher-0"],             "decode": ["worker-0", "worker-1", "worker-2"]},
+  "2p1d": {"prefill": ["launcher-0", "worker-0"], "decode": ["worker-1"]}
+}
 ```
 
-换 RUN_ID 即可并存多组记录。缺席的节点不会被启动，Router 也会因健康检查失败而在启动前报错。
+启动时按名字选，`PD_TOPO` 由 `deploy.sh` 解析，不必手写：
+
+```bash
+bash deploy.sh start --topo 2p1d      # 2 prefill + 1 decode，余下节点保持空闲
+```
+
+新增或调整方案只改 `cluster.json` 那几行，**脚本不用动**；分配建议「顺序取用、余下留空」，
+各方案之间就不易互相踩（`2p1d` 占 3 台、`1p3d` 占 4 台）。仍可显式传 `PD_TOPO=...` 直接跑逐节点脚本。
+换 RUN_ID 即可并存多组记录；缺席的节点不会被启动，Router 也会因健康检查失败而在启动前报错。
 
 ## 参数与兼容性修正
 

@@ -19,9 +19,9 @@
   "reasoning-parser": "glm45",
   "enforce-eager": false,
   "max-num-seqs": 8,
-  "additional-config": "{\"dispatch_shared_expert_parallel\": true}",
+  "additional-config": "{\"dispatch_shared_expert_parallel\": true, \"prefill_sequence_parallel_size\": 8}",
   "port": 8100,
-  "max-model-len": 245760,
+  "max-model-len": 180224,
   "max-num-batched-tokens": 8192,
   "kv-transfer-config": "{\"kv_connector\": \"NixlConnector\", \"kv_role\": \"kv_producer\", \"kv_load_failure_policy\": \"fail\"}",
   "speculative-config": "{\"method\": \"mtp\", \"num_speculative_tokens\": 3}"

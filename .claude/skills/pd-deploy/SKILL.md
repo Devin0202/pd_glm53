@@ -1,6 +1,6 @@
 ---
 name: pd-deploy
-description: 启停 GLM-5.3 PD 服务（pd_glm53）。当用户要求部署/启动/停止/重启 PD 服务，或切换部署方案（1P1D / 1P3D）时使用。参数：<start|stop> [拓扑名，默认 1p3d]。
+description: 启停 GLM-5.3 PD 服务（pd_glm53）。当用户要求部署/启动/停止/重启 PD 服务，或切换部署方案（1P1D / 2P1D / 1P3D）时使用。参数：<start|stop> [拓扑名，默认 1p3d]。
 ---
 
 # PD 服务启停
@@ -20,7 +20,7 @@ bash /workspace/volume/data/dy/bench/package/pd_glm53/deploy.sh stop --topo 1p3d
 | 参数 | 说明 |
 |---|---|
 | 第一个位置参数 | `start` 或 `stop` |
-| 第二个位置参数 | 拓扑名，默认 `1p3d`；`cluster.json` 的 `topologies` 里定义，目前有 `1p3d`、`1p1d` |
+| 第二个位置参数 | 拓扑名，默认 `1p3d`；`cluster.json` 的 `topologies` 里定义，目前有 `1p3d`、`1p1d`、`2p1d` |
 | `--run-id ID` | 指定运行编号；start 不填则按 UTC 时间生成，stop 不填则用包目录下的 `last_run` |
 | `--force` | 仅 stop：跳过排空，直接停 |
 | `--drain-timeout SECS` | 仅 stop：等待队列排空的秒数（默认 120） |

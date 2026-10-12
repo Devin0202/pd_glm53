@@ -43,6 +43,15 @@
         "worker-1",
         "worker-2"
       ]
+    },
+    "2p1d": {
+      "prefill": [
+        "launcher-0",
+        "worker-0"
+      ],
+      "decode": [
+        "worker-1"
+      ]
     }
   },
   "_comment_ports": "Ports are per role and identical on every node, because each node runs at most one engine: 8200 on three decode hosts is three distinct network namespaces. The NIXL side channel is likewise per host. Two engines of the same role on one node would need distinct ports and side channels.",

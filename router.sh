@@ -18,8 +18,9 @@ if [[ "$mode" == pd ]] && (( ${#decode_nodes[@]} == 0 )); then
  echo 'PD mode needs at least one decode node in PD_TOPO'; exit 2
 fi
 PD_ROOT=$(py root)
-# The engines must have used one matching profile, and every decode must agree with the
-# prefill on the keys PD requires. Missing configs also mean an engine never started.
+# Every decode must agree with the prefill on the keys that make the KV transfer valid
+# (topology.py CONFIG_KEYS documents which, and which are deliberately not required). Missing
+# configs also mean an engine never started.
 if [[ "$mode" == pd ]]; then py check-configs "$run_id"; fi
 echo '2ee688193e800ac5a32eacb3dd12440ab49b31eb73b08a8ea80ff79aefe28e06  '"$HERE/bin/vllm-router" | sha256sum -c -
 for l in "${prefill_nodes[@]}"; do
